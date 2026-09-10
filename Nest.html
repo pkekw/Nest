@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tareas</title>
+<style>
+:root{
+  --accent:#007AFF;
+  --bg:#F2F2F7;
+  --card:#FFFFFF;
+  --text:#1C1C1E;
+  --text-secondary:#6E6E73;
+  --border:rgba(60,60,67,0.12);
+  --shadow:0 1px 3px rgba(0,0,0,0.06);
+  --shadow-lg:0 8px 30px rgba(0,0,0,0.12);
+  --radius:16px;
+  --radius-sm:10px;
+  --ease:cubic-bezier(0.4,0,0.2,1);
+  --p-obligatoria:#FF3B30;
+  --p-alta:#FF9500;
+  --p-media:#007AFF;
+  --p-baja:#8E8E93;
+  --p-opcional:#AF52DE;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-top:env(safe-area-inset-top,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000000;
+    --card:#1C1C1E;
+    --text:#F5F5F7;
+    --text-secondary:#98989D;
+    --border:rgba(255,255,255,0.12);
+    --shadow:0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg:0 8px 30px rgba(0,0,0,0.5);
+  }
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overscroll-behavior-y:none;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;}
+input,textarea,select{font-family:inherit;}
+.app{
+  max-width:1100px;
+  margin:0 auto;
+  min-height:100vh;
+  padding-bottom:calc(84px + var(--safe-bottom));
+  position:relative;
+}
+
+/* ---------- Header ---------- */
+header.top{
+  position:sticky; top:0; z-index:40;
+  background:var(--bg);
+  padding:calc(14px + var(--safe-top)) 16px 10px;
+  backdrop-filter:blur(20px);
+  background:color-mix(in srgb, var(--bg) 85%, transparent);
+}
+.top-row{display:flex; align-items:center; gap:10px;}
+.title-block{flex:1; min-width:0;}
+.title-block h1{font-size:28px; font-weight:700; margin:0; letter-spacing:-0.02em;}
+.pending-count{font-size:13px; color:var(--text-secondary); margin-top:2px;}
+.icon-btn{
+  width:38px; height:38px; border-radius:50%;
+  border:none; background:var(--card); color:var(--text);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:var(--shadow); flex-shrink:0;
+  transition:transform .15s var(--ease), background .2s var(--ease);
+}
+.icon-btn:active{transform:scale(0.9);}
+.icon-btn svg{width:18px; height:18px;}
+.icon-btn.muted{color:var(--text-secondary);}
+
+.search-wrap{margin-top:12px; position:relative;}
+.search-wrap input{
+  width:100%; padding:10px 14px 10px 38px; border-radius:12px;
+  border:none; background:var(--card); color:var(--text); font-size:16px;
+  box-shadow:var(--shadow); outline:none;
+}
+.search-wrap input:focus{box-shadow:0 0 0 2px var(--accent);}
+.search-wrap svg{position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-secondary);}
+
+.filters-scroll{display:flex; gap:8px; overflow-x:auto; margin-top:12px; padding-bottom:2px; scrollbar-width:none;}
+.filters-scroll::-webkit-scrollbar{display:none;}
+.chip{
+  flex-shrink:0; padding:8px 14px; border-radius:999px; border:none;
+  background:var(--card); color:var(--text-secondary); font-size:14px; font-weight:500;
+  box-shadow:var(--shadow); transition:all .2s var(--ease); white-space:nowrap;
+}
+.chip.active{background:var(--accent); color:#fff;}
+.sort-select{
+  margin-left:auto; flex-shrink:0; padding:8px 12px; border-radius:999px; border:none;
+  background:var(--card); color:var(--text-secondary); font-size:13px; box-shadow:var(--shadow);
+}
+
+/* ---------- Sections ---------- */
+main{padding:16px;}
+section{display:none;}
+section.active{display:block; animation:fadein .25s var(--ease);}
+@keyframes fadein{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+.banner{
+  border-radius:var(--radius); padding:16px 18px; margin-bottom:14px;
+  background:var(--card); box-shadow:var(--shadow); position:relative;
+  animation:fadein .3s var(--ease);
+}
+.banner.motiv{border-left:4px solid var(--p-media);}
+.banner.reminder{border-left:4px solid var(--p-alta);}
+.banner.reminder.critical{border-left-color:var(--p-obligatoria);}
+.banner p{margin:0; font-size:14px; line-height:1.5;}
+.banner .close-x{
+  position:absolute; top:10px; right:10px; border:none; background:transparent;
+  color:var(--text-secondary); width:24px; height:24px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+}
+
+.tray{
+  background:var(--card); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; box-shadow:var(--shadow);
+}
+.tray-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+.tray-head h3{font-size:15px; margin:0; font-weight:600;}
+.tray-head button{
+  border:none; background:transparent; color:var(--accent); font-size:13px; font-weight:600; padding:6px 8px;
+}
+.tray-list{display:flex; gap:8px; overflow-x:auto; scrollbar-width:none;}
+.tray-list::-webkit-scrollbar{display:none;}
+.tray-item{
+  flex-shrink:0; max-width:180px; background:var(--bg); border-radius:12px; padding:10px 12px; font-size:13px;
+}
+.tray-item .t-text{font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.tray-empty{color:var(--text-secondary); font-size:13px; padding:4px 0;}
+
+/* ---------- Task list ---------- */
+.task-list{display:flex; flex-direction:column; gap:10px;}
+.task{
+  background:var(--card); border-radius:var(--radius); padding:14px 16px;
+  display:flex; align-items:flex-start; gap:12px; box-shadow:var(--shadow);
+  transition:transform .2s var(--ease), opacity .35s var(--ease), box-shadow .2s var(--ease);
+  border-left:4px solid transparent;
+  position:relative;
+}
+.task.p-obligatoria{border-left-color:var(--p-obligatoria); background:linear-gradient(90deg, color-mix(in srgb, var(--p-obligatoria) 8%, var(--card)), var(--card) 40%);}
+.task.p-obligatoria.urgent{background:linear-gradient(90deg, color-mix(in srgb, var(--p-obligatoria) 18%, var(--card)), var(--card) 60%);}
+.task.p-alta{border-left-color:var(--p-alta);}
+.task.p-media{border-left-color:var(--p-media);}
+.task.p-baja{border-left-color:var(--p-baja);}
+.task.p-opcional{border-left-color:var(--p-opcional);}
+.task.done{opacity:0.45;}
+.task.removing{opacity:0; transform:scale(0.92) translateX(30px); max-height:0; padding-top:0; padding-bottom:0; margin:0; overflow:hidden;}
+
+.check{
+  width:26px; height:26px; border-radius:50%; border:2px solid var(--text-secondary); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; margin-top:2px; transition:all .2s var(--ease);
+}
+.check.checked{background:var(--accent); border-color:var(--accent);}
+.check svg{width:14px; height:14px; color:#fff; opacity:0; transform:scale(0.5); transition:all .2s var(--ease);}
+.check.checked svg{opacity:1; transform:scale(1);}
+
+.task-body{flex:1; min-width:0;}
+.task-text{font-size:15.5px; font-weight:500; line-height:1.35; word-break:break-word;}
+.task-text.done-text{text-decoration:line-through; color:var(--text-secondary);}
+.task-meta{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; align-items:center;}
+.meta-pill{
+  font-size:11.5px; padding:3px 8px; border-radius:999px; background:var(--bg); color:var(--text-secondary);
+  display:flex; align-items:center; gap:4px;
+}
+.meta-pill.prio{font-weight:600;}
+.meta-pill.prio.p-obligatoria{color:var(--p-obligatoria); background:color-mix(in srgb, var(--p-obligatoria) 14%, var(--bg));}
+.meta-pill.prio.p-alta{color:var(--p-alta); background:color-mix(in srgb, var(--p-alta) 14%, var(--bg));}
+.meta-pill.prio.p-media{color:var(--p-media); background:color-mix(in srgb, var(--p-media) 14%, var(--bg));}
+.meta-pill.prio.p-baja{color:var(--p-baja); background:color-mix(in srgb, var(--p-baja) 14%, var(--bg));}
+.meta-pill.prio.p-opcional{color:var(--p-opcional); background:color-mix(in srgb, var(--p-opcional) 14%, var(--bg));}
+.motivo-tag{font-size:11.5px; color:var(--p-opcional); font-style:italic;}
+
+.task-actions{display:flex; flex-direction:column; gap:6px; flex-shrink:0;}
+.task-actions button{
+  width:34px; height:34px; border-radius:50%; border:none; background:var(--bg); color:var(--text-secondary);
+  display:flex; align-items:center; justify-content:center;
+}
+.task-actions button svg{width:15px; height:15px;}
+.task-actions button.del:active{background:var(--p-obligatoria); color:#fff;}
+
+.empty-state{text-align:center; padding:60px 20px; color:var(--text-secondary);}
+.empty-state svg{width:48px; height:48px; margin-bottom:12px; opacity:0.4;}
+.empty-state p{margin:0; font-size:15px;}
+
+/* ---------- Calendar ---------- */
+.cal-controls{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:10px;}
+.cal-nav{display:flex; align-items:center; gap:6px;}
+.cal-title{font-size:17px; font-weight:700; min-width:150px; text-align:center;}
+.view-toggle{display:flex; background:var(--card); border-radius:10px; padding:3px; box-shadow:var(--shadow);}
+.view-toggle button{
+  border:none; background:transparent; padding:6px 12px; border-radius:8px; font-size:13px; font-weight:600; color:var(--text-secondary);
+}
+.view-toggle button.active{background:var(--accent); color:#fff;}
+
+.legend{display:flex; flex-wrap:wrap; gap:10px; background:var(--card); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:14px; box-shadow:var(--shadow);}
+.legend-item{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-secondary);}
+.legend-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+.cal-dow{text-align:center; font-size:11px; color:var(--text-secondary); font-weight:600; padding-bottom:4px;}
+.cal-cell{
+  background:var(--card); border-radius:12px; min-height:64px; padding:6px 5px; box-shadow:var(--shadow);
+  display:flex; flex-direction:column; gap:2px; cursor:pointer; transition:background .15s var(--ease), transform .15s var(--ease);
+  position:relative;
+}
+.cal-cell.other-month{opacity:0.35;}
+.cal-cell.today{box-shadow:0 0 0 2px var(--accent) inset;}
+.cal-cell.dragover{background:color-mix(in srgb, var(--accent) 16%, var(--card)); transform:scale(1.03);}
+.cal-daynum{font-size:12px; font-weight:600; color:var(--text-secondary);}
+.cal-cell.today .cal-daynum{color:var(--accent);}
+.cal-task{
+  font-size:10px; padding:1px 4px; border-radius:5px; line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  text-decoration-line:underline; text-decoration-thickness:2px; text-underline-offset:2px; background:var(--bg);
+}
+.cal-more{font-size:9.5px; color:var(--text-secondary); padding-left:4px;}
+
+.week-grid{display:flex; flex-direction:column; gap:8px;}
+.week-day-row{background:var(--card); border-radius:var(--radius-sm); padding:10px 12px; box-shadow:var(--shadow); cursor:pointer;}
+.week-day-row.dragover{background:color-mix(in srgb, var(--accent) 16%, var(--card));}
+.week-day-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+.week-day-head b{font-size:13px;}
+.week-day-head span{font-size:11px; color:var(--text-secondary);}
+.week-tasks{display:flex; flex-direction:column; gap:4px;}
+.week-task{font-size:12.5px; padding:4px 8px; border-radius:8px; background:var(--bg); text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:2px;}
+
+/* ---------- Bottom nav ---------- */
+nav.bottom{
+  position:fixed; bottom:0; left:0; right:0; z-index:50;
+  display:flex; justify-content:center;
+  padding-bottom:var(--safe-bottom);
+  background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+}
+.bottom-inner{display:flex; width:100%; max-width:1100px; padding:6px 20px;}
+.tab-btn{
+  flex:1; background:transparent; border:none; display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:6px 0; color:var(--text-secondary); font-size:10.5px; font-weight:500;
+}
+.tab-btn svg{width:23px; height:23px;}
+.tab-btn.active{color:var(--accent);}
+.fab{
+  position:absolute; right:16px; top:-26px;
+  width:56px; height:56px; border-radius:50%; border:none; background:var(--accent); color:#fff;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,122,255,0.4);
+  transition:transform .15s var(--ease);
+}
+.fab:active{transform:scale(0.9);}
+.fab svg{width:26px; height:26px;}
+
+/* ---------- Modal ---------- */
+.overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:100; display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .25s var(--ease);
+}
+.overlay.open{opacity:1; pointer-events:auto;}
+@media (min-width:700px){ .overlay{align-items:center;} }
+.modal{
+  background:var(--card); width:100%; max-width:520px; border-radius:22px 22px 0 0; padding:20px 20px calc(20px + var(--safe-bottom));
+  max-height:88vh; overflow-y:auto; transform:translateY(30px); transition:transform .3s var(--ease);
+  box-shadow:var(--shadow-lg);
+}
+@media (min-width:700px){ .modal{border-radius:22px; transform:scale(0.95); margin:20px;} }
+.overlay.open .modal{transform:translateY(0) scale(1);}
+.modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+.modal-head h2{font-size:18px; margin:0;}
+.modal-head button{border:none; background:var(--bg); width:30px; height:30px; border-radius:50%; color:var(--text-secondary); display:flex; align-items:center; justify-content:center;}
+.field{margin-bottom:16px;}
+.field label{display:block; font-size:12.5px; font-weight:600; color:var(--text-secondary); margin-bottom:6px;}
+.field input[type=text], .field input[type=date], .field textarea{
+  width:100%; padding:11px 13px; border-radius:12px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:16px; outline:none;
+}
+.field input:focus, .field textarea:focus{border-color:var(--accent);}
+.field textarea{resize:vertical; min-height:44px; font-family:inherit;}
+.prio-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.prio-opt{
+  padding:11px 10px; border-radius:12px; border:1.5px solid var(--border); background:var(--bg); font-size:13.5px; font-weight:600;
+  display:flex; align-items:center; gap:7px; text-align:left;
+}
+.prio-opt .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+.prio-opt.selected{border-color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, var(--bg));}
+.cat-grid{display:flex; flex-wrap:wrap; gap:8px;}
+.cat-opt{padding:8px 14px; border-radius:999px; border:1.5px solid var(--border); background:var(--bg); font-size:13px; font-weight:500; color:var(--text-secondary);}
+.cat-opt.selected{background:var(--accent); border-color:var(--accent); color:#fff;}
+.modal-actions{display:flex; gap:10px; margin-top:6px;}
+.btn{
+  flex:1; padding:13px; border-radius:14px; border:none; font-size:15px; font-weight:600; transition:transform .15s var(--ease);
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:var(--accent); color:#fff;}
+.btn-secondary{background:var(--bg); color:var(--text);}
+.btn-danger{background:color-mix(in srgb, var(--p-obligatoria) 14%, var(--bg)); color:var(--p-obligatoria);}
+
+/* action sheet (long-press) */
+.sheet-list{display:flex; flex-direction:column; gap:2px;}
+.sheet-item{
+  padding:14px 6px; border:none; background:transparent; text-align:left; font-size:15.5px; color:var(--text);
+  border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;
+}
+.sheet-item:last-child{border-bottom:none;}
+.sheet-item svg{width:18px; height:18px; color:var(--text-secondary);}
+.sheet-item.danger{color:var(--p-obligatoria);}
+.sheet-item.danger svg{color:var(--p-obligatoria);}
+
+/* day-detail reorder list */
+.day-list{display:flex; flex-direction:column; gap:8px;}
+.day-item{
+  background:var(--bg); border-radius:12px; padding:11px 12px; display:flex; align-items:center; gap:10px;
+  touch-action:none; user-select:none;
+}
+.day-item .grip{color:var(--text-secondary); flex-shrink:0;}
+.day-item .grip svg{width:16px; height:16px;}
+.day-item.dragging{box-shadow:var(--shadow-lg); background:var(--card); z-index:5; position:relative;}
+.day-item-text{flex:1; font-size:14px; font-weight:500;}
+
+.settings-option{
+  display:flex; align-items:center; gap:14px; width:100%; padding:15px 14px; border-radius:14px; border:none;
+  background:var(--bg); color:var(--text); text-align:left; margin-bottom:10px;
+}
+.settings-option .so-icon{
+  width:38px; height:38px; border-radius:50%; background:var(--card); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:var(--shadow);
+}
+.settings-option .so-icon svg{width:18px; height:18px; color:var(--accent);}
+.settings-option .so-text{flex:1;}
+.settings-option .so-title{font-size:14.5px; font-weight:600;}
+.settings-option .so-sub{font-size:12px; color:var(--text-secondary); margin-top:1px;}
+.settings-note{font-size:12px; color:var(--text-secondary); line-height:1.5; margin:2px 2px 14px;}
+.storage-badge{display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-secondary); background:var(--bg); padding:5px 10px; border-radius:999px; margin-bottom:14px;}
+.storage-badge .dot{width:7px; height:7px; border-radius:50%; background:#34C759;}
+.storage-badge.warn .dot{background:var(--p-alta);}
+
+.toast{
+  position:fixed; bottom:calc(100px + var(--safe-bottom)); left:50%; transform:translateX(-50%) translateY(10px);
+  background:var(--text); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:13.5px; font-weight:500;
+  opacity:0; pointer-events:none; transition:all .3s var(--ease); z-index:200; white-space:nowrap;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="top-row">
+      <div class="title-block">
+        <h1>Tareas</h1>
+        <div class="pending-count" id="pendingCount">0 pendientes</div>
+      </div>
+      <button class="icon-btn" id="soundBtn" title="Silenciar sonidos"></button>
+      <button class="icon-btn" id="catBtn" title="Categorías">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4" opacity="0"/><path d="M7 9v6a5 3 0 0010 0V9"/></svg>
+      </button>
+      <button class="icon-btn" id="settingsBtn" title="Ajustes y copia de seguridad">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
+    </div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" placeholder="Buscar tareas...">
+    </div>
+    <div class="filters-scroll" id="filterChips">
+      <button class="chip active" data-filter="pendientes">Pendientes</button>
+      <button class="chip" data-filter="todas">Todas</button>
+      <button class="chip" data-filter="completadas">Completadas</button>
+      <button class="chip" data-filter="obligatorias">Obligatorias</button>
+      <button class="chip" data-filter="opcional">Opcional+Motivo</button>
+      <select class="sort-select" id="sortSelect">
+        <option value="fecha">Ordenar: Fecha</option>
+        <option value="prioridad">Ordenar: Prioridad</option>
+        <option value="categoria">Ordenar: Categoría</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <section id="view-tareas" class="active">
+      <div id="bannersZone"></div>
+      <div class="tray">
+        <div class="tray-head">
+          <h3>Sin fecha</h3>
+          <button id="reviewNoDateBtn">Revisar tareas sin fecha</button>
+        </div>
+        <div class="tray-list" id="noDateTray"></div>
+      </div>
+      <div class="task-list" id="taskList"></div>
+    </section>
+
+    <section id="view-calendario">
+      <div class="cal-controls">
+        <button class="icon-btn" id="calPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="cal-title" id="calTitle"></div>
+        <button class="icon-btn" id="calNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+      <div class="view-toggle" style="margin-bottom:14px;">
+        <button id="viewMonthBtn" class="active">Mensual</button>
+        <button id="viewWeekBtn">Semanal</button>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div id="calBody"></div>
+    </section>
+  </main>
+
+  <nav class="bottom">
+    <div class="bottom-inner">
+      <button class="tab-btn active" data-tab="tareas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Tareas
+      </button>
+      <button class="tab-btn" data-tab="calendario">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+        Calendario
+      </button>
+      <button class="fab" id="fabAdd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<div class="overlay" id="taskOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="taskModalTitle">Nueva tarea</h2>
+      <button id="closeTaskModal">✕</button>
+    </div>
+    <div class="field">
+      <label>Descripción</label>
+      <textarea id="fText" placeholder="¿Qué hay que hacer?" rows="2"></textarea>
+    </div>
+    <div class="field">
+      <label>Prioridad</label>
+      <div class="prio-grid" id="prioGrid"></div>
+    </div>
+    <div class="field" id="motivoField" style="display:none;">
+      <label>Motivo (obligatorio para Opcional)</label>
+      <input type="text" id="fMotivo" placeholder="ej: subir nota de mates">
+    </div>
+    <div class="field">
+      <label id="dateLabel">Fecha</label>
+      <input type="date" id="fDate">
+    </div>
+    <div class="field">
+      <label>Categorías</label>
+      <div class="cat-grid" id="catGrid"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancelTaskBtn">Cancelar</button>
+      <button class="btn btn-primary" id="saveTaskBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="sheetOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="sheetTitle">Opciones</h2><button id="closeSheet">✕</button></div>
+    <div class="sheet-list" id="sheetList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="moveDateOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>Mover a fecha...</h2><button id="closeMoveDate">✕</button></div>
+    <div class="field"><input type="date" id="moveDateInput"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="moveNoDateBtn">Sin fecha</button>
+      <button class="btn btn-primary" id="confirmMoveDate">Mover</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="dayOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="dayModalTitle">Día</h2><button id="closeDayModal">✕</button></div>
+    <div class="day-list" id="dayList"></div>
+    <p style="font-size:12px; color:var(--text-secondary); margin-top:10px;">Mantén pulsado y arrastra <span class="grip">≡</span> para reordenar.</p>
+  </div>
+</div>
+
+<div class="overlay" id="reviewOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>Revisar tareas sin fecha</h2><button id="closeReview">✕</button></div>
+    <div id="reviewBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="catOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>Categorías</h2><button id="closeCatModal">✕</button></div>
+    <div id="catManageList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
+    <div class="field" style="display:flex; gap:8px; margin-bottom:0;">
+      <input type="text" id="newCatInput" placeholder="Nueva categoría" style="flex:1;">
+      <button class="btn btn-primary" style="flex:0 0 auto; padding:11px 16px;" id="addCatBtn">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="settingsOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>Ajustes</h2><button id="closeSettings">✕</button></div>
+    <div class="storage-badge" id="storageBadge"><span class="dot"></span><span id="storageBadgeText">Comprobando almacenamiento...</span></div>
+    <button class="settings-option" id="exportBtn">
+      <span class="so-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>
+      <span class="so-text"><span class="so-title">Exportar copia de seguridad</span><span class="so-sub">Descarga un .json con todas tus tareas y ajustes</span></span>
+    </button>
+    <button class="settings-option" id="importBtn">
+      <span class="so-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M5 3h14"/></svg></span>
+      <span class="so-text"><span class="so-title">Importar copia de seguridad</span><span class="so-sub">Restaura tus datos desde un archivo .json</span></span>
+    </button>
+    <input type="file" id="importFileInput" accept="application/json,.json" style="display:none;">
+    <p class="settings-note">Tus datos se guardan en este dispositivo mediante IndexedDB. Si el navegador borra los datos del sitio, puedes recuperarlo todo importando tu última copia de seguridad. Recomendable exportar de vez en cuando.</p>
+  </div>
+</div>
+
+<div class="overlay" id="confirmImportOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>¿Sobrescribir datos?</h2><button id="closeConfirmImport">✕</button></div>
+    <p style="font-size:14px; color:var(--text-secondary); line-height:1.5; margin-top:0;" id="confirmImportText">Esto reemplazará todas tus tareas, categorías y ajustes actuales por los del archivo importado. Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancelImportBtn">Cancelar</button>
+      <button class="btn btn-danger" id="confirmImportBtn">Sí, sobrescribir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== STATE ===================== */
+const PRIORITIES = [
+  {id:'obligatoria', label:'Obligatoria', color:'var(--p-obligatoria)', requiresDate:true},
+  {id:'alta', label:'Alta', color:'var(--p-alta)'},
+  {id:'media', label:'Media', color:'var(--p-media)'},
+  {id:'baja', label:'Baja', color:'var(--p-baja)'},
+  {id:'opcional', label:'Opcional + Motivo', color:'var(--p-opcional)', requiresMotivo:true}
+];
+const PRIO_RANK = {obligatoria:0, alta:1, media:2, baja:3, opcional:4};
+const REMINDER_THRESHOLDS = {obligatoria:[14,7,3,1], alta:[7,3,1]};
+
+const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function defaultState(){
+  return {
+    tasks:[],
+    categories:['Instituto','Ocio','Trabajo','Personal','Hogar'],
+    soundOn:true,
+    filter:'pendientes',
+    sort:'fecha',
+    calView:'month',
+    calCursor: todayStr(),
+    lastNoDatePrompt:null,
+    dismissedReminders:{}, // key `id-days` -> dateStr dismissed
+    dismissedMotiv:null
+  };
+}
+let state = defaultState();
+
+/* ---- Storage layer: IndexedDB as primary store, localStorage as fallback ---- */
+const DB_NAME = 'tareas-app-db';
+const STORE = 'state';
+const RECORD_KEY = 'app-state';
+const LS_KEY = 'tareas-app-state-v1';
+let dbPromise = null;
+let storageMode = 'checking'; // 'indexeddb' | 'localstorage'
+
+function openDB(){
+  if(dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject)=>{
+    if(!('indexedDB' in window)){ reject(new Error('no-idb')); return; }
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = ()=>{ req.result.createObjectStore(STORE); };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error||new Error('idb-error'));
+  });
+  return dbPromise;
+}
+function idbGet(){
+  return openDB().then(db=> new Promise((resolve,reject)=>{
+    const tx = db.transaction(STORE, 'readonly');
+    const rq = tx.objectStore(STORE).get(RECORD_KEY);
+    rq.onsuccess = ()=> resolve(rq.result||null);
+    rq.onerror = ()=> reject(rq.error);
+  }));
+}
+function idbSet(value){
+  return openDB().then(db=> new Promise((resolve,reject)=>{
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(value, RECORD_KEY);
+    tx.oncomplete = ()=> resolve();
+    tx.onerror = ()=> reject(tx.error);
+  }));
+}
+function lsGet(){
+  try{ const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function lsSet(value){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(value)); return true; }catch(e){ return false; }
+}
+
+// Loads saved state (async). Resolves with a state object or null if nothing saved.
+function loadState(){
+  return openDB().then(()=> idbGet().then(data=>{
+    storageMode = 'indexeddb';
+    if(data) return data;
+    // nothing in IndexedDB yet: migrate any existing localStorage data once
+    const legacy = lsGet();
+    return legacy || null;
+  })).catch(()=>{
+    storageMode = 'localstorage';
+    return lsGet();
+  });
+}
+// Persists current state (fire-and-forget, safe to call synchronously from anywhere)
+function save(){
+  if(storageMode === 'localstorage'){ lsSet(state); return; }
+  idbSet(JSON.parse(JSON.stringify(state))).catch(()=>{ lsSet(state); });
+}
+
+function uid(){ return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function todayStr(){ const d=new Date(); return fmtDate(d); }
+function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function daysBetween(a,b){ const MS=86400000; const da=parseDate(a), db=parseDate(b); da.setHours(0,0,0,0); db.setHours(0,0,0,0); return Math.round((db-da)/MS); }
+function prioOf(id){ return PRIORITIES.find(p=>p.id===id); }
+
+/* ===================== SOUND ===================== */
+let actx=null;
+function ctx(){ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+function beep(freq, dur, type, vol, delay){
+  if(!state.soundOn) return;
+  try{
+    const c = ctx();
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type||'sine'; o.frequency.value = freq;
+    const t0 = c.currentTime + (delay||0);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol||0.12, t0+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t0); o.stop(t0+dur+0.02);
+  }catch(e){}
+}
+const sounds = {
+  add: ()=>{ beep(880,0.09,'sine',0.1); beep(1320,0.11,'sine',0.09,0.06); },
+  complete: ()=>{ beep(660,0.08,'sine',0.1); beep(990,0.12,'sine',0.1,0.07); beep(1320,0.14,'sine',0.08,0.14); },
+  del: ()=>{ beep(440,0.1,'sine',0.09); beep(260,0.16,'sine',0.08,0.06); },
+  drag: ()=>{ beep(520,0.05,'sine',0.06); }
+};
+
+/* ===================== DOM refs ===================== */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+const taskList = $('#taskList');
+const noDateTray = $('#noDateTray');
+const pendingCount = $('#pendingCount');
+const bannersZone = $('#bannersZone');
+const soundBtn = $('#soundBtn');
+const toastEl = $('#toast');
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>toastEl.classList.remove('show'), 2200);
+}
+
+/* ===================== SOUND BUTTON ===================== */
+function renderSoundBtn(){
+  soundBtn.innerHTML = state.soundOn
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/></svg>';
+  soundBtn.classList.toggle('muted', !state.soundOn);
+}
+soundBtn.addEventListener('click', ()=>{
+  state.soundOn = !state.soundOn; save(); renderSoundBtn();
+  toast(state.soundOn ? 'Sonidos activados' : 'Sonidos silenciados');
+});
+
+/* ===================== TABS ===================== */
+$$('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    $$('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    $$('section').forEach(s=>s.classList.remove('active'));
+    $('#view-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='calendario') renderCalendar();
+  });
+});
+
+/* ===================== FILTERS / SORT / SEARCH ===================== */
+$('#filterChips').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  $$('.chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  state.filter = chip.dataset.filter;
+  save(); renderTasks();
+});
+$('#sortSelect').addEventListener('change', e=>{ state.sort = e.target.value; save(); renderTasks(); });
+let searchTimer;
+$('#searchInput').addEventListener('input', ()=>{ clearTimeout(searchTimer); searchTimer=setTimeout(renderTasks, 120); });
+
+/* ===================== RENDER TASK LIST ===================== */
+function getFilteredSorted(){
+  const q = $('#searchInput').value.trim().toLowerCase();
+  let list = state.tasks.filter(t=>{
+    if(q && !t.text.toLowerCase().includes(q)) return false;
+    switch(state.filter){
+      case 'pendientes': return !t.done;
+      case 'completadas': return t.done;
+      case 'obligatorias': return t.priority==='obligatoria';
+      case 'opcional': return t.priority==='opcional';
+      default: return true;
+    }
+  });
+  list.sort((a,b)=>{
+    if(state.sort==='prioridad') return PRIO_RANK[a.priority]-PRIO_RANK[b.priority] || cmpDate(a,b);
+    if(state.sort==='categoria') return (a.categories[0]||'').localeCompare(b.categories[0]||'') || cmpDate(a,b);
+    return cmpDate(a,b);
+  });
+  return list;
+}
+function cmpDate(a,b){
+  if(!a.date && !b.date) return 0;
+  if(!a.date) return 1;
+  if(!b.date) return -1;
+  return a.date.localeCompare(b.date);
+}
+
+function renderTasks(){
+  const list = getFilteredSorted();
+  const pendingTotal = state.tasks.filter(t=>!t.done).length;
+  pendingCount.textContent = pendingTotal+' pendiente'+(pendingTotal===1?'':'s');
+
+  taskList.innerHTML = '';
+  if(list.length===0){
+    taskList.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><p>No hay tareas aquí.</p></div>';
+  }
+  list.forEach(t=> taskList.appendChild(renderTaskEl(t)) );
+
+  renderNoDateTray();
+  renderBanners();
+}
+
+function renderTaskEl(t){
+  const p = prioOf(t.priority);
+  const div = document.createElement('div');
+  div.className = 'task p-'+t.priority + (t.done?' done':'');
+  if(t.priority==='obligatoria' && t.date && !t.done){
+    const d = daysBetween(todayStr(), t.date);
+    if(d<=3) div.classList.add('urgent');
+  }
+  div.dataset.id = t.id;
+
+  const dateLabel = t.date ? fmtHuman(t.date) : 'Sin fecha';
+  let metaHtml = `<span class="meta-pill prio p-${t.priority}">${t.priority==='opcional'?'✦ ':''}${p.label}</span>`;
+  metaHtml += `<span class="meta-pill">${dateLabel}</span>`;
+  t.categories.forEach(c=> metaHtml += `<span class="meta-pill">${escapeHtml(c)}</span>`);
+
+  div.innerHTML = `
+    <div class="check ${t.done?'checked':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <div class="task-body">
+      <div class="task-text ${t.done?'done-text':''}">${escapeHtml(t.text)}</div>
+      <div class="task-meta">${metaHtml}</div>
+      ${t.priority==='opcional' && t.motivo ? `<div class="motivo-tag">${escapeHtml(t.motivo)}</div>` : ''}
+    </div>
+    <div class="task-actions">
+      <button class="edit" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+      <button class="del" title="Eliminar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg></button>
+    </div>
+  `;
+  div.querySelector('.check').addEventListener('click', ()=> toggleDone(t.id, div));
+  div.querySelector('.edit').addEventListener('click', ()=> openTaskModal(t.id));
+  div.querySelector('.del').addEventListener('click', ()=> deleteTask(t.id, div));
+  return div;
+}
+function fmtHuman(dateStr){
+  const d = parseDate(dateStr);
+  return d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3);
+}
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function toggleDone(id, el){
+  const t = state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.done = !t.done;
+  if(t.done){
+    sounds.complete();
+    el && el.classList.add('done');
+    save();
+    setTimeout(()=>{
+      if(el){ el.classList.add('removing'); setTimeout(renderTasks, 380); }
+      else renderTasks();
+    }, 1600);
+  } else {
+    save(); renderTasks();
+  }
+}
+function deleteTask(id, el){
+  sounds.del();
+  if(el){ el.classList.add('removing'); setTimeout(()=>{ state.tasks = state.tasks.filter(t=>t.id!==id); save(); renderTasks(); }, 320); }
+  else { state.tasks = state.tasks.filter(t=>t.id!==id); save(); renderTasks(); }
+}
+
+/* ===================== NO-DATE TRAY ===================== */
+function renderNoDateTray(){
+  const list = state.tasks.filter(t=>!t.date && !t.done);
+  noDateTray.innerHTML = '';
+  if(list.length===0){ noDateTray.innerHTML = '<div class="tray-empty">No tienes tareas sin fecha 🎉</div>'; return; }
+  list.forEach(t=>{
+    const div = document.createElement('div');
+    div.className = 'tray-item';
+    div.innerHTML = `<div class="t-text">${escapeHtml(t.text)}</div><div class="motivo-tag" style="color:var(--text-secondary); font-style:normal; font-size:11px;">${prioOf(t.priority).label}</div>`;
+    div.addEventListener('click', ()=> openTaskModal(t.id));
+    noDateTray.appendChild(div);
+  });
+}
+$('#reviewNoDateBtn').addEventListener('click', ()=> openReviewModal());
+
+/* ===================== BANNERS (motivational + reminders) ===================== */
+function renderBanners(){
+  bannersZone.innerHTML = '';
+  const today = todayStr();
+  const pending = state.tasks.filter(t=>!t.done);
+
+  // reminders escalonados
+  const reminders = [];
+  pending.forEach(t=>{
+    if(!t.date) return;
+    const thresholds = REMINDER_THRESHOLDS[t.priority];
+    if(!thresholds) return;
+    const d = daysBetween(today, t.date);
+    if(thresholds.includes(d) && d>=0){
+      const key = t.id+'-'+d;
+      if(state.dismissedReminders[key]===today) return;
+      reminders.push({t, d, key});
+    }
+  });
+  reminders.sort((a,b)=>a.d-b.d);
+  reminders.slice(0,3).forEach(r=>{
+    const msgs = {14:'Faltan 2 semanas', 7:'Falta una semana', 3:'Faltan solo 3 días', 1:'¡Es mañana!'};
+    const critical = r.d<=3;
+    const div = document.createElement('div');
+    div.className = 'banner reminder'+(critical?' critical':'');
+    div.innerHTML = `<button class="close-x">✕</button><p><b>${msgs[r.d]||('Faltan '+r.d+' días')}:</b> "${escapeHtml(r.t.text)}". ¿Quieres empezar a prepararlo?</p>`;
+    div.querySelector('.close-x').addEventListener('click', ()=>{ state.dismissedReminders[r.key]=today; save(); div.remove(); });
+    bannersZone.appendChild(div);
+  });
+
+  // motivational
+  const urgentSoon = pending.some(t=> (t.priority==='obligatoria' || t.priority==='alta') && (!t.date || daysBetween(today,t.date)<=3) );
+  if(!urgentSoon && state.dismissedMotiv!==today){
+    const candidates = pending.filter(t=> ['media','baja','opcional'].includes(t.priority));
+    if(candidates.length>0){
+      const pick = candidates[Math.floor(Math.random()*candidates.length)];
+      const div = document.createElement('div');
+      div.className = 'banner motiv';
+      const motivoTxt = pick.motivo ? ` (${escapeHtml(pick.motivo)})` : '';
+      div.innerHTML = `<button class="close-x">✕</button><p>No tienes nada urgente hoy. Si te apetece, podrías avanzar "${escapeHtml(pick.text)}"${motivoTxt}. Y si no, también está bien. 🙂</p>`;
+      div.querySelector('.close-x').addEventListener('click', ()=>{ state.dismissedMotiv=today; save(); div.remove(); });
+      bannersZone.appendChild(div);
+    }
+  }
+}
+
+/* ===================== TASK MODAL ===================== */
+const taskOverlay = $('#taskOverlay');
+let editingId = null;
+let selectedPriority = 'media';
+let selectedCats = [];
+
+function renderPrioGrid(){
+  const grid = $('#prioGrid');
+  grid.innerHTML = '';
+  PRIORITIES.forEach(p=>{
+    const b = document.createElement('button');
+    b.type='button';
+    b.className = 'prio-opt'+(selectedPriority===p.id?' selected':'');
+    b.innerHTML = `<span class="dot" style="background:${p.color}"></span>${p.id==='opcional'?'✦ ':''}${p.label}`;
+    b.addEventListener('click', ()=>{
+      selectedPriority = p.id;
+      renderPrioGrid();
+      $('#motivoField').style.display = p.requiresMotivo ? 'block' : 'none';
+      $('#dateLabel').textContent = p.requiresDate ? 'Fecha (obligatoria)' : 'Fecha (opcional)';
+    });
+    grid.appendChild(b);
+  });
+}
+function renderCatGrid(){
+  const grid = $('#catGrid');
+  grid.innerHTML = '';
+  state.categories.forEach(c=>{
+    const b = document.createElement('button');
+    b.type='button';
+    b.className = 'cat-opt'+(selectedCats.includes(c)?' selected':'');
+    b.textContent = c;
+    b.addEventListener('click', ()=>{
+      if(selectedCats.includes(c)) selectedCats = selectedCats.filter(x=>x!==c);
+      else selectedCats.push(c);
+      renderCatGrid();
+    });
+    grid.appendChild(b);
+  });
+}
+
+function openTaskModal(id, presetDate){
+  editingId = id || null;
+  const t = id ? state.tasks.find(x=>x.id===id) : null;
+  $('#taskModalTitle').textContent = t ? 'Editar tarea' : 'Nueva tarea';
+  $('#fText').value = t ? t.text : '';
+  $('#fDate').value = t ? (t.date||'') : (presetDate||'');
+  $('#fMotivo').value = t ? (t.motivo||'') : '';
+  selectedPriority = t ? t.priority : 'media';
+  selectedCats = t ? [...t.categories] : [];
+  renderPrioGrid(); renderCatGrid();
+  $('#motivoField').style.display = (selectedPriority==='opcional') ? 'block' : 'none';
+  $('#dateLabel').textContent = (selectedPriority==='obligatoria') ? 'Fecha (obligatoria)' : 'Fecha (opcional)';
+  taskOverlay.classList.add('open');
+  setTimeout(()=>$('#fText').focus(), 200);
+}
+function closeTaskModal(){ taskOverlay.classList.remove('open'); }
+$('#closeTaskModal').addEventListener('click', closeTaskModal);
+$('#cancelTaskBtn').addEventListener('click', closeTaskModal);
+taskOverlay.addEventListener('click', e=>{ if(e.target===taskOverlay) closeTaskModal(); });
+
+$('#saveTaskBtn').addEventListener('click', ()=>{
+  const text = $('#fText').value.trim();
+  if(!text){ toast('Escribe una descripción'); return; }
+  const date = $('#fDate').value || null;
+  const p = prioOf(selectedPriority);
+  if(p.requiresDate && !date){ toast('Esta prioridad requiere una fecha'); return; }
+  const motivo = $('#fMotivo').value.trim();
+  if(p.requiresMotivo && !motivo){ toast('Escribe el motivo'); return; }
+
+  if(editingId){
+    const t = state.tasks.find(x=>x.id===editingId);
+    Object.assign(t, {text, date, priority:selectedPriority, categories:[...selectedCats], motivo: p.requiresMotivo?motivo:null});
+    toast('Tarea actualizada');
+  } else {
+    state.tasks.push({
+      id: uid(), text, date, priority:selectedPriority, categories:[...selectedCats],
+      motivo: p.requiresMotivo?motivo:null, done:false, createdAt:Date.now(), order: state.tasks.length
+    });
+    sounds.add();
+    toast('Tarea añadida');
+  }
+  save(); closeTaskModal(); renderTasks(); if($('#view-calendario').classList.contains('active')) renderCalendar();
+});
+$('#fabAdd').addEventListener('click', ()=> openTaskModal(null));
+
+/* ===================== CATEGORY MANAGEMENT ===================== */
+$('#catBtn').addEventListener('click', ()=>{ renderCatManage(); $('#catOverlay').classList.add('open'); });
+$('#closeCatModal').addEventListener('click', ()=> $('#catOverlay').classList.remove('open'));
+$('#catOverlay').addEventListener('click', e=>{ if(e.target.id==='catOverlay') $('#catOverlay').classList.remove('open'); });
+function renderCatManage(){
+  const wrap = $('#catManageList');
+  wrap.innerHTML = '';
+  state.categories.forEach((c,i)=>{
+    const row = document.createElement('div');
+    row.style.cssText='display:flex; align-items:center; gap:8px;';
+    row.innerHTML = `<input type="text" value="${escapeHtml(c)}" style="flex:1; padding:9px 12px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:14px;">
+      <button style="border:none; background:var(--bg); width:34px; height:34px; border-radius:50%; color:var(--p-obligatoria);">✕</button>`;
+    const inp = row.querySelector('input');
+    inp.addEventListener('change', ()=>{
+      const old = c, val = inp.value.trim();
+      if(!val) return;
+      state.categories[i] = val;
+      state.tasks.forEach(t=>{ t.categories = t.categories.map(cc=> cc===old? val: cc); });
+      save(); renderTasks();
+    });
+    row.querySelector('button').addEventListener('click', ()=>{
+      state.categories.splice(i,1);
+      state.tasks.forEach(t=>{ t.categories = t.categories.filter(cc=>cc!==c); });
+      save(); renderCatManage(); renderTasks();
+    });
+    wrap.appendChild(row);
+  });
+}
+$('#addCatBtn').addEventListener('click', ()=>{
+  const inp = $('#newCatInput');
+  const v = inp.value.trim();
+  if(!v) return;
+  if(!state.categories.includes(v)) state.categories.push(v);
+  inp.value='';
+  save(); renderCatManage();
+});
+
+/* ===================== REVIEW NO-DATE MODAL ===================== */
+function openReviewModal(){
+  const body = $('#reviewBody');
+  const list = state.tasks.filter(t=>!t.date && !t.done);
+  body.innerHTML = '';
+  if(list.length===0){
+    body.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">No tienes tareas sin fecha por ahora. 🎉</p>';
+  } else {
+    list.forEach(t=>{
+      const row = document.createElement('div');
+      row.style.cssText='margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border);';
+      row.innerHTML = `<div style="font-weight:600; font-size:14.5px; margin-bottom:8px;">${escapeHtml(t.text)}</div>
+        <div style="display:flex; gap:8px;">
+          <input type="date" style="flex:1; padding:9px 10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:14px;">
+          <button class="btn btn-primary" style="flex:0 0 auto; padding:9px 14px; font-size:13px;">Asignar</button>
+        </div>`;
+      const inp = row.querySelector('input');
+      row.querySelector('button').addEventListener('click', ()=>{
+        if(!inp.value){ toast('Elige una fecha'); return; }
+        t.date = inp.value; save(); toast('Fecha asignada'); row.remove(); renderTasks();
+        if(body.children.length===0){ body.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">¡Todo asignado! 🎉</p>'; }
+      });
+      body.appendChild(row);
+    });
+  }
+  state.lastNoDatePrompt = todayStr(); save();
+  $('#reviewOverlay').classList.add('open');
+}
+$('#closeReview').addEventListener('click', ()=> $('#reviewOverlay').classList.remove('open'));
+$('#reviewOverlay').addEventListener('click', e=>{ if(e.target.id==='reviewOverlay') $('#reviewOverlay').classList.remove('open'); });
+
+/* ===================== CALENDAR ===================== */
+const calBody = $('#calBody');
+$('#viewMonthBtn').addEventListener('click', ()=>{ state.calView='month'; save(); syncCalToggle(); renderCalendar(); });
+$('#viewWeekBtn').addEventListener('click', ()=>{ state.calView='week'; save(); syncCalToggle(); renderCalendar(); });
+function syncCalToggle(){
+  $('#viewMonthBtn').classList.toggle('active', state.calView==='month');
+  $('#viewWeekBtn').classList.toggle('active', state.calView==='week');
+}
+$('#calPrev').addEventListener('click', ()=> shiftCal(-1));
+$('#calNext').addEventListener('click', ()=> shiftCal(1));
+function shiftCal(dir){
+  const d = parseDate(state.calCursor);
+  if(state.calView==='month') d.setMonth(d.getMonth()+dir);
+  else d.setDate(d.getDate()+dir*7);
+  state.calCursor = fmtDate(d); save(); renderCalendar();
+}
+
+function renderLegend(){
+  const el = $('#legend');
+  el.innerHTML = PRIORITIES.map(p=>`<div class="legend-item"><span class="legend-dot" style="background:${p.color}"></span>${p.label}</div>`).join('');
+}
+
+function tasksOnDate(dateStr){
+  return state.tasks.filter(t=>t.date===dateStr).sort((a,b)=> (a.order||0)-(b.order||0));
+}
+
+function renderCalendar(){
+  renderLegend();
+  if(state.calView==='month') renderMonth(); else renderWeek();
+}
+
+function renderMonth(){
+  const cursor = parseDate(state.calCursor);
+  const year = cursor.getFullYear(), month = cursor.getMonth();
+  $('#calTitle').textContent = MONTHS[month]+' '+year;
+  const first = new Date(year, month, 1);
+  const startOffset = first.getDay();
+  const gridStart = new Date(year, month, 1-startOffset);
+  const today = todayStr();
+
+  let html = '<div class="cal-grid">';
+  DOW.forEach(d=> html += `<div class="cal-dow">${d}</div>`);
+  calBody.innerHTML = html + '</div>';
+  const grid = calBody.querySelector('.cal-grid');
+
+  for(let i=0;i<42;i++){
+    const d = new Date(gridStart); d.setDate(gridStart.getDate()+i);
+    const ds = fmtDate(d);
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell'+(d.getMonth()!==month?' other-month':'')+(ds===today?' today':'');
+    cell.dataset.date = ds;
+    const dayTasks = tasksOnDate(ds);
+    let inner = `<div class="cal-daynum">${d.getDate()}</div>`;
+    dayTasks.slice(0,3).forEach(t=>{
+      inner += `<div class="cal-task" style="text-decoration-color:${prioOf(t.priority).color}; color:${prioOf(t.priority).color==='var(--p-baja)'?'var(--text)':'var(--text)'}">${escapeHtml(t.text)}</div>`;
+    });
+    if(dayTasks.length>3) inner += `<div class="cal-more">+${dayTasks.length-3} más</div>`;
+    cell.innerHTML = inner;
+    cell.addEventListener('click', ()=> openDayModal(ds));
+    setupDropTarget(cell, ds);
+    grid.appendChild(cell);
+  }
+}
+
+function renderWeek(){
+  const cursor = parseDate(state.calCursor);
+  const dow = cursor.getDay();
+  const weekStart = new Date(cursor); weekStart.setDate(cursor.getDate()-dow);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6);
+  $('#calTitle').textContent = weekStart.getDate()+' '+MONTHS[weekStart.getMonth()].slice(0,3)+' - '+weekEnd.getDate()+' '+MONTHS[weekEnd.getMonth()].slice(0,3);
+
+  calBody.innerHTML = '<div class="week-grid"></div>';
+  const wrap = calBody.querySelector('.week-grid');
+  const today = todayStr();
+  for(let i=0;i<7;i++){
+    const d = new Date(weekStart); d.setDate(weekStart.getDate()+i);
+    const ds = fmtDate(d);
+    const row = document.createElement('div');
+    row.className = 'week-day-row';
+    row.dataset.date = ds;
+    const dayTasks = tasksOnDate(ds);
+    let inner = `<div class="week-day-head"><b>${DOW[d.getDay()]} ${d.getDate()}${ds===today?' · hoy':''}</b><span>${dayTasks.length} tarea${dayTasks.length===1?'':'s'}</span></div><div class="week-tasks">`;
+    dayTasks.forEach(t=> inner += `<div class="week-task" style="text-decoration-color:${prioOf(t.priority).color}">${escapeHtml(t.text)}</div>` );
+    inner += '</div>';
+    row.innerHTML = inner;
+    row.addEventListener('click', ()=> openDayModal(ds));
+    setupDropTarget(row, ds);
+    wrap.appendChild(row);
+  }
+}
+
+/* ---- Desktop native drag & drop between days ---- */
+function setupDropTarget(el, dateStr){
+  el.addEventListener('dragover', e=>{ e.preventDefault(); el.classList.add('dragover'); });
+  el.addEventListener('dragleave', ()=> el.classList.remove('dragover'));
+  el.addEventListener('drop', e=>{
+    e.preventDefault(); el.classList.remove('dragover');
+    const id = e.dataTransfer.getData('text/plain');
+    if(!id) return;
+    const t = state.tasks.find(x=>x.id===id);
+    if(t){ t.date = dateStr; sounds.drag(); save(); renderCalendar(); renderTasks(); toast('Movida a '+fmtHuman(dateStr)); }
+  });
+}
+
+/* ---- Day detail modal: reorder + long-press "mover a fecha" ---- */
+const dayOverlay = $('#dayOverlay');
+let currentDayDate = null;
+function openDayModal(dateStr){
+  currentDayDate = dateStr;
+  $('#dayModalTitle').textContent = fmtHuman(dateStr)+' · lista del día';
+  renderDayList();
+  dayOverlay.classList.add('open');
+}
+$('#closeDayModal').addEventListener('click', ()=> dayOverlay.classList.remove('open'));
+dayOverlay.addEventListener('click', e=>{ if(e.target===dayOverlay) dayOverlay.classList.remove('open'); });
+
+function renderDayList(){
+  const wrap = $('#dayList');
+  wrap.innerHTML = '';
+  const list = tasksOnDate(currentDayDate);
+  if(list.length===0){
+    wrap.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">No hay tareas este día. Añade una nueva con el botón +.</p>';
+    return;
+  }
+  list.forEach(t=>{
+    const item = document.createElement('div');
+    item.className = 'day-item';
+    item.dataset.id = t.id;
+    item.draggable = true;
+    item.innerHTML = `<span class="grip"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="8" cy="6" r="1.5"/><circle cx="16" cy="6" r="1.5"/><circle cx="8" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/><circle cx="8" cy="18" r="1.5"/><circle cx="16" cy="18" r="1.5"/></svg></span>
+      <span class="day-item-text">${escapeHtml(t.text)}</span>`;
+    // desktop native drag out of calendar cells too
+    item.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', t.id); });
+    // long-press to open action sheet
+    attachLongPress(item, t.id);
+    wrap.appendChild(item);
+  });
+  enableTouchReorder(wrap);
+}
+
+/* long-press handling (mouse + touch unified via pointer events) */
+function attachLongPress(el, taskId){
+  let timer=null, moved=false, startX=0, startY=0;
+  const THRESH = 8;
+  el.addEventListener('pointerdown', e=>{
+    moved=false; startX=e.clientX; startY=e.clientY;
+    timer = setTimeout(()=>{ if(!moved){ openActionSheet(taskId); } }, 480);
+  });
+  el.addEventListener('pointermove', e=>{
+    if(Math.abs(e.clientX-startX)>THRESH || Math.abs(e.clientY-startY)>THRESH){ moved=true; clearTimeout(timer); }
+  });
+  el.addEventListener('pointerup', ()=> clearTimeout(timer));
+  el.addEventListener('pointercancel', ()=> clearTimeout(timer));
+}
+
+/* touch/pointer based vertical reorder within a day */
+function enableTouchReorder(container){
+  let dragEl=null, startY=0, placeholderIndex=0;
+  container.querySelectorAll('.day-item').forEach(item=>{
+    const grip = item.querySelector('.grip');
+    grip.addEventListener('pointerdown', e=>{
+      e.preventDefault();
+      dragEl = item;
+      item.classList.add('dragging');
+      item.setPointerCapture(e.pointerId);
+      startY = e.clientY;
+      sounds.drag();
+      const move = ev=>{
+        const dy = ev.clientY - startY;
+        item.style.transform = `translateY(${dy}px)`;
+        const siblings = Array.from(container.querySelectorAll('.day-item:not(.dragging)'));
+        for(const sib of siblings){
+          const rect = sib.getBoundingClientRect();
+          const mid = rect.top + rect.height/2;
+          if(ev.clientY < mid){ container.insertBefore(item, sib); break; }
+          else { container.insertBefore(item, sib.nextSibling); }
+        }
+      };
+      const up = ()=>{
+        item.classList.remove('dragging');
+        item.style.transform='';
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', up);
+        // persist order
+        const ids = Array.from(container.querySelectorAll('.day-item')).map(x=>x.dataset.id);
+        ids.forEach((id,i)=>{ const t=state.tasks.find(x=>x.id===id); if(t) t.order=i; });
+        save(); renderCalendar();
+      };
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', up);
+    });
+  });
+}
+
+/* ===================== ACTION SHEET (mover / editar / eliminar) ===================== */
+const sheetOverlay = $('#sheetOverlay');
+let sheetTaskId = null;
+function openActionSheet(taskId){
+  sheetTaskId = taskId;
+  const t = state.tasks.find(x=>x.id===taskId);
+  if(!t) return;
+  $('#sheetTitle').textContent = t.text.length>28 ? t.text.slice(0,28)+'…' : t.text;
+  const list = $('#sheetList');
+  list.innerHTML = `
+    <button class="sheet-item" data-act="move"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M3 10h18"/></svg>Mover a fecha...</button>
+    <button class="sheet-item" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Editar tarea</button>
+    <button class="sheet-item" data-act="done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>${t.done?'Marcar como pendiente':'Marcar como completada'}</button>
+    <button class="sheet-item danger" data-act="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>Eliminar</button>
+  `;
+  list.querySelectorAll('.sheet-item').forEach(b=> b.addEventListener('click', ()=> handleSheetAction(b.dataset.act)) );
+  sheetOverlay.classList.add('open');
+}
+$('#closeSheet').addEventListener('click', ()=> sheetOverlay.classList.remove('open'));
+sheetOverlay.addEventListener('click', e=>{ if(e.target===sheetOverlay) sheetOverlay.classList.remove('open'); });
+
+function handleSheetAction(act){
+  sheetOverlay.classList.remove('open');
+  const t = state.tasks.find(x=>x.id===sheetTaskId);
+  if(!t) return;
+  if(act==='move'){ openMoveDateModal(sheetTaskId); }
+  else if(act==='edit'){ dayOverlay.classList.remove('open'); openTaskModal(sheetTaskId); }
+  else if(act==='done'){ t.done=!t.done; if(t.done) sounds.complete(); save(); renderDayList(); renderCalendar(); renderTasks(); }
+  else if(act==='del'){ sounds.del(); state.tasks = state.tasks.filter(x=>x.id!==sheetTaskId); save(); renderDayList(); renderCalendar(); renderTasks(); }
+}
+
+/* move-to-date modal (mobile-friendly alternative to drag&drop) */
+const moveDateOverlay = $('#moveDateOverlay');
+let moveTaskId = null;
+function openMoveDateModal(taskId){
+  moveTaskId = taskId;
+  const t = state.tasks.find(x=>x.id===taskId);
+  $('#moveDateInput').value = t.date || '';
+  moveDateOverlay.classList.add('open');
+}
+$('#closeMoveDate').addEventListener('click', ()=> moveDateOverlay.classList.remove('open'));
+moveDateOverlay.addEventListener('click', e=>{ if(e.target===moveDateOverlay) moveDateOverlay.classList.remove('open'); });
+$('#confirmMoveDate').addEventListener('click', ()=>{
+  const t = state.tasks.find(x=>x.id===moveTaskId);
+  const val = $('#moveDateInput').value;
+  if(t.priority==='obligatoria' && !val){ toast('Esta prioridad requiere fecha'); return; }
+  t.date = val || null;
+  sounds.drag(); save();
+  moveDateOverlay.classList.remove('open');
+  renderCalendar(); renderTasks(); renderDayList();
+  toast(val ? 'Movida a '+fmtHuman(val) : 'Marcada sin fecha');
+});
+$('#moveNoDateBtn').addEventListener('click', ()=>{
+  const t = state.tasks.find(x=>x.id===moveTaskId);
+  if(t.priority==='obligatoria'){ toast('Esta prioridad requiere fecha'); return; }
+  t.date = null; save(); moveDateOverlay.classList.remove('open'); renderCalendar(); renderTasks(); renderDayList();
+  toast('Marcada sin fecha');
+});
+
+/* ===================== SETTINGS / EXPORT / IMPORT ===================== */
+const settingsOverlay = $('#settingsOverlay');
+$('#settingsBtn').addEventListener('click', ()=>{ updateStorageBadge(); settingsOverlay.classList.add('open'); });
+$('#closeSettings').addEventListener('click', ()=> settingsOverlay.classList.remove('open'));
+settingsOverlay.addEventListener('click', e=>{ if(e.target===settingsOverlay) settingsOverlay.classList.remove('open'); });
+
+function updateStorageBadge(){
+  const badge = $('#storageBadge'), text = $('#storageBadgeText');
+  if(storageMode==='indexeddb'){ badge.classList.remove('warn'); text.textContent = 'Guardando en IndexedDB'; }
+  else if(storageMode==='localstorage'){ badge.classList.add('warn'); text.textContent = 'IndexedDB no disponible · usando localStorage'; }
+  else { badge.classList.remove('warn'); text.textContent = 'Comprobando almacenamiento...'; }
+}
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function exportFilename(){
+  const d = new Date();
+  return `tareas-backup-${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}.json`;
+}
+
+$('#exportBtn').addEventListener('click', ()=>{
+  try{
+    const payload = {
+      app: 'tareas-apple-style',
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      data: state
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = exportFilename();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 1000);
+    toast('Copia de seguridad descargada');
+  }catch(e){
+    toast('No se pudo exportar. Inténtalo de nuevo.');
+  }
+});
+
+const importFileInput = $('#importFileInput');
+$('#importBtn').addEventListener('click', ()=> importFileInput.click());
+
+let pendingImportState = null;
+importFileInput.addEventListener('change', ()=>{
+  const file = importFileInput.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = JSON.parse(reader.result);
+      const incoming = parsed && parsed.data ? parsed.data : parsed; // accept raw state too
+      if(!incoming || !Array.isArray(incoming.tasks) || !Array.isArray(incoming.categories)){
+        toast('El archivo no parece una copia de seguridad válida');
+        importFileInput.value='';
+        return;
+      }
+      pendingImportState = incoming;
+      const taskCount = incoming.tasks.length;
+      $('#confirmImportText').textContent = `Esto reemplazará todas tus tareas, categorías y ajustes actuales por los del archivo importado (${taskCount} tarea${taskCount===1?'':'s'} encontrada${taskCount===1?'':'s'}). Esta acción no se puede deshacer.`;
+      settingsOverlay.classList.remove('open');
+      $('#confirmImportOverlay').classList.add('open');
+    }catch(e){
+      toast('No se pudo leer el archivo. ¿Es un .json válido?');
+    }
+    importFileInput.value='';
+  };
+  reader.onerror = ()=>{ toast('No se pudo leer el archivo'); importFileInput.value=''; };
+  reader.readAsText(file);
+});
+
+$('#closeConfirmImport').addEventListener('click', ()=>{ $('#confirmImportOverlay').classList.remove('open'); pendingImportState=null; });
+$('#cancelImportBtn').addEventListener('click', ()=>{ $('#confirmImportOverlay').classList.remove('open'); pendingImportState=null; });
+$('#confirmImportOverlay').addEventListener('click', e=>{ if(e.target.id==='confirmImportOverlay'){ $('#confirmImportOverlay').classList.remove('open'); pendingImportState=null; } });
+
+$('#confirmImportBtn').addEventListener('click', ()=>{
+  if(!pendingImportState){ $('#confirmImportOverlay').classList.remove('open'); return; }
+  state = Object.assign(defaultState(), pendingImportState);
+  pendingImportState = null;
+  save();
+  $('#confirmImportOverlay').classList.remove('open');
+  renderSoundBtn();
+  syncCalToggle();
+  renderTasks();
+  renderCalendar();
+  toast('Copia de seguridad restaurada con éxito ✓');
+});
+
+/* ===================== DAILY AUTO CHECK ===================== */
+function dailyCheck(){
+  const today = todayStr();
+  const undated = state.tasks.filter(t=>!t.date && !t.done);
+  if(undated.length>0 && state.lastNoDatePrompt !== today){
+    setTimeout(()=> openReviewModal(), 500);
+  }
+}
+
+/* ===================== SEED DATA (first run) ===================== */
+function seedIfEmpty(){
+  if(state.tasks.length>0) return;
+  const t = todayStr();
+  const plus = n=>{ const d=parseDate(t); d.setDate(d.getDate()+n); return fmtDate(d); };
+  state.tasks = [
+    {id:uid(), text:'Examen de matemáticas', priority:'obligatoria', date:plus(6), categories:['Instituto'], done:false, motivo:null, order:0},
+    {id:uid(), text:'Comprar regalo cumpleaños', priority:'alta', date:plus(2), categories:['Personal'], done:false, motivo:null, order:0},
+    {id:uid(), text:'Leer 20 páginas', priority:'media', date:null, categories:['Ocio'], done:false, motivo:null, order:0},
+    {id:uid(), text:'Subir nota de inglés', priority:'opcional', date:null, categories:['Instituto'], done:false, motivo:'mejorar la media', order:0},
+    {id:uid(), text:'Ordenar el escritorio', priority:'baja', date:null, categories:['Hogar'], done:false, motivo:null, order:0}
+  ];
+  save();
+}
+
+/* ===================== INIT ===================== */
+function init(){
+  seedIfEmpty();
+  renderSoundBtn();
+  syncCalToggle();
+  renderTasks();
+  dailyCheck();
+  updateStorageBadge();
+}
+loadState().then(saved=>{
+  if(saved) state = Object.assign(defaultState(), saved);
+  save(); // ensures data lands in IndexedDB (e.g. after a localStorage migration)
+  init();
+}).catch(()=>{
+  init();
+});
+
+})();
+</script>
+</body>
+</html>
