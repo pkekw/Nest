@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tareas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --accent:#007AFF;
@@ -338,6 +339,34 @@ nav.bottom{
 .storage-badge .dot{width:7px; height:7px; border-radius:50%; background:#34C759;}
 .storage-badge.warn .dot{background:var(--p-alta);}
 
+/* ---------- Auth screen ---------- */
+#authScreen{
+  position:fixed; inset:0; z-index:500; background:var(--bg);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.auth-box{width:100%; max-width:380px;}
+.auth-logo{width:56px; height:56px; border-radius:16px; background:var(--accent); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; box-shadow:0 8px 20px rgba(0,122,255,0.35);}
+.auth-logo svg{width:28px; height:28px; color:#fff;}
+.auth-box h1{text-align:center; font-size:24px; margin:0 0 4px; letter-spacing:-0.02em;}
+.auth-box .auth-sub{text-align:center; font-size:13.5px; color:var(--text-secondary); margin:0 0 26px;}
+.auth-tabs{display:flex; background:var(--card); border-radius:12px; padding:3px; margin-bottom:20px; box-shadow:var(--shadow);}
+.auth-tabs button{flex:1; border:none; background:transparent; padding:9px; border-radius:9px; font-size:13.5px; font-weight:600; color:var(--text-secondary);}
+.auth-tabs button.active{background:var(--accent); color:#fff;}
+.auth-error{font-size:13px; color:var(--p-obligatoria); background:color-mix(in srgb, var(--p-obligatoria) 12%, var(--bg)); padding:10px 12px; border-radius:10px; margin-bottom:14px; display:none;}
+.auth-error.show{display:block;}
+.auth-hint{font-size:12px; color:var(--text-secondary); text-align:center; margin-top:16px; line-height:1.5;}
+.auth-config-warning{font-size:12.5px; color:var(--p-alta); background:color-mix(in srgb, var(--p-alta) 12%, var(--bg)); padding:12px 14px; border-radius:12px; margin-bottom:20px; line-height:1.5;}
+
+/* ---------- Sync indicator ---------- */
+.sync-badge{display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-secondary);}
+.sync-badge .dot{width:6px; height:6px; border-radius:50%; background:#34C759;}
+.sync-badge.offline .dot{background:var(--p-baja);}
+.sync-badge.syncing .dot{background:var(--p-alta); animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.3;}}
+.user-email-row{display:flex; align-items:center; justify-content:space-between; background:var(--bg); border-radius:12px; padding:12px 14px; margin-bottom:14px;}
+.user-email-row span{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:220px;}
+.user-email-row button{border:none; background:var(--card); color:var(--p-obligatoria); font-size:12.5px; font-weight:600; padding:7px 12px; border-radius:9px; box-shadow:var(--shadow);}
+
 .toast{
   position:fixed; bottom:calc(100px + var(--safe-bottom)); left:50%; transform:translateX(-50%) translateY(10px);
   background:var(--text); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:13.5px; font-weight:500;
@@ -351,13 +380,40 @@ nav.bottom{
 </style>
 </head>
 <body>
-<div class="app">
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+    <h1>Tareas</h1>
+    <p class="auth-sub">Tus tareas, sincronizadas en la nube</p>
+    <div id="configWarning" class="auth-config-warning" style="display:none;">
+      Configura tu URL y clave anon de Supabase en la constante <code>SUPABASE_URL</code> / <code>SUPABASE_ANON_KEY</code> al inicio del script para poder iniciar sesión.
+    </div>
+    <div class="auth-tabs">
+      <button id="tabLogin" class="active">Iniciar sesión</button>
+      <button id="tabRegister">Crear cuenta</button>
+    </div>
+    <div class="auth-error" id="authError"></div>
+    <div class="field">
+      <label>Correo electrónico</label>
+      <input type="email" id="authEmail" autocomplete="email" placeholder="tucorreo@ejemplo.com">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="authPassword" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary" id="authSubmitBtn" style="width:100%;">Iniciar sesión</button>
+    <p class="auth-hint" id="authHint">¿Primera vez aquí? Pulsa "Crear cuenta" arriba.</p>
+  </div>
+</div>
+
+<div class="app" id="mainApp" style="display:none;">
 
   <header class="top">
     <div class="top-row">
       <div class="title-block">
         <h1>Tareas</h1>
         <div class="pending-count" id="pendingCount">0 pendientes</div>
+        <div class="sync-badge" id="syncBadge"><span class="dot"></span><span id="syncBadgeText">Sincronizado</span></div>
       </div>
       <button class="icon-btn" id="soundBtn" title="Silenciar sonidos"></button>
       <button class="icon-btn" id="catBtn" title="Categorías">
@@ -510,6 +566,10 @@ nav.bottom{
 <div class="overlay" id="settingsOverlay">
   <div class="modal">
     <div class="modal-head"><h2>Ajustes</h2><button id="closeSettings">✕</button></div>
+    <div class="user-email-row">
+      <span id="userEmailLabel">—</span>
+      <button id="signOutBtn">Cerrar sesión</button>
+    </div>
     <div class="storage-badge" id="storageBadge"><span class="dot"></span><span id="storageBadgeText">Comprobando almacenamiento...</span></div>
     <button class="settings-option" id="exportBtn">
       <span class="so-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>
@@ -520,7 +580,7 @@ nav.bottom{
       <span class="so-text"><span class="so-title">Importar copia de seguridad</span><span class="so-sub">Restaura tus datos desde un archivo .json</span></span>
     </button>
     <input type="file" id="importFileInput" accept="application/json,.json" style="display:none;">
-    <p class="settings-note">Tus datos se guardan en este dispositivo mediante IndexedDB. Si el navegador borra los datos del sitio, puedes recuperarlo todo importando tu última copia de seguridad. Recomendable exportar de vez en cuando.</p>
+    <p class="settings-note">Tus tareas se sincronizan automáticamente con tu cuenta en la nube. Exporta de vez en cuando como copia de seguridad extra, y esta caché local (IndexedDB) sirve de respaldo si te quedas sin conexión.</p>
   </div>
 </div>
 
@@ -535,11 +595,35 @@ nav.bottom{
   </div>
 </div>
 
+<div class="overlay" id="migrateOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2>Tareas encontradas en este dispositivo</h2><button id="closeMigrate">✕</button></div>
+    <p style="font-size:14px; color:var(--text-secondary); line-height:1.5; margin-top:0;" id="migrateText">Hemos encontrado tareas guardadas localmente en este dispositivo. ¿Quieres importarlas a tu cuenta para que se sincronicen en la nube?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="skipMigrateBtn">No, gracias</button>
+      <button class="btn btn-primary" id="confirmMigrateBtn">Importar a mi cuenta</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 (function(){
 "use strict";
+
+/* ===================== SUPABASE CONFIG ===================== */
+// Sustituye estos dos valores por los de tu proyecto (Supabase → Project Settings → API)
+const SUPABASE_URL = 'https://vujimndkrxrzslzwbvvg.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_s_kNdvIYVYWL4TukD9wnHw_NF9TAyrs';
+
+const supabaseConfigured = !SUPABASE_URL.includes('TU_PROYECTO') && !SUPABASE_ANON_KEY.includes('TU_ANON_KEY');
+const supabase = supabaseConfigured && window.supabase
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } })
+  : null;
+
+let currentUser = null;
+let realtimeChannel = null;
 
 /* ===================== STATE ===================== */
 const PRIORITIES = [
@@ -566,7 +650,8 @@ function defaultState(){
     calCursor: todayStr(),
     lastNoDatePrompt:null,
     dismissedReminders:{}, // key `id-days` -> dateStr dismissed
-    dismissedMotiv:null
+    dismissedMotiv:null,
+    migratedToSupabase:false
   };
 }
 let state = defaultState();
@@ -630,6 +715,128 @@ function loadState(){
 function save(){
   if(storageMode === 'localstorage'){ lsSet(state); return; }
   idbSet(JSON.parse(JSON.stringify(state))).catch(()=>{ lsSet(state); });
+}
+
+/* ---- Remote sync layer (Supabase) ---- */
+function setSyncStatus(mode, text){
+  const badge = $('#syncBadge'), t = $('#syncBadgeText');
+  if(!badge) return;
+  badge.classList.remove('offline','syncing');
+  if(mode!=='online') badge.classList.add(mode);
+  t.textContent = text;
+}
+function taskToRow(t){
+  return {
+    user_id: currentUser.id,
+    text: t.text,
+    date: t.date,
+    priority: t.priority,
+    categories: t.categories,
+    motivo: t.motivo,
+    done: t.done,
+    order: t.order||0
+  };
+}
+function rowToTask(r){
+  return { id:r.id, text:r.text, date:r.date, priority:r.priority, categories:r.categories||[], motivo:r.motivo, done:r.done, order:r.order||0, createdAt: r.created_at };
+}
+async function dbFetchAll(){
+  const [{data:taskRows, error:e1}, {data:catRows, error:e2}] = await Promise.all([
+    supabase.from('tasks').select('*').eq('user_id', currentUser.id),
+    supabase.from('categories').select('*').eq('user_id', currentUser.id)
+  ]);
+  if(e1||e2) throw (e1||e2);
+  return { tasks: (taskRows||[]).map(rowToTask), categories: (catRows||[]).map(c=>c.name) };
+}
+async function dbInsertTask(t){
+  setSyncStatus('syncing','Guardando...');
+  const { data, error } = await supabase.from('tasks').insert(taskToRow(t)).select().single();
+  setSyncStatus('online','Sincronizado');
+  if(error) throw error;
+  return rowToTask(data);
+}
+async function dbUpdateTask(id, fields){
+  setSyncStatus('syncing','Guardando...');
+  const { error } = await supabase.from('tasks').update(fields).eq('id', id).eq('user_id', currentUser.id);
+  setSyncStatus('online','Sincronizado');
+  if(error) throw error;
+}
+async function dbDeleteTask(id){
+  setSyncStatus('syncing','Guardando...');
+  const { error } = await supabase.from('tasks').delete().eq('id', id).eq('user_id', currentUser.id);
+  setSyncStatus('online','Sincronizado');
+  if(error) throw error;
+}
+async function dbInsertCategory(name){
+  const { error } = await supabase.from('categories').insert({ user_id: currentUser.id, name });
+  if(error) throw error;
+}
+async function dbRenameCategory(oldName, newName){
+  const { error } = await supabase.from('categories').update({name:newName}).eq('user_id', currentUser.id).eq('name', oldName);
+  if(error) throw error;
+}
+async function dbDeleteCategory(name){
+  const { error } = await supabase.from('categories').delete().eq('user_id', currentUser.id).eq('name', name);
+  if(error) throw error;
+}
+// Wipes the user's remote tasks/categories and re-inserts the given local set. Used by Import and by the local->cloud migration.
+async function dbReplaceAllWith(tasks, categories){
+  await supabase.from('tasks').delete().eq('user_id', currentUser.id);
+  await supabase.from('categories').delete().eq('user_id', currentUser.id);
+  if(categories && categories.length){
+    await supabase.from('categories').insert(categories.map(name=>({user_id:currentUser.id, name})));
+  }
+  let inserted = [];
+  if(tasks && tasks.length){
+    const rows = tasks.map(t=> taskToRow(t));
+    const { data, error } = await supabase.from('tasks').insert(rows).select();
+    if(error) throw error;
+    inserted = data.map(rowToTask);
+  }
+  return inserted;
+}
+function withSync(promise, onError){
+  promise.catch(err=>{
+    console.error(err);
+    setSyncStatus('offline','Error de sincronización');
+    toast('No se pudo sincronizar con el servidor');
+    if(onError) onError(err);
+  });
+}
+
+/* ---- Realtime ---- */
+function subscribeRealtime(){
+  if(!supabase || !currentUser) return;
+  unsubscribeRealtime();
+  realtimeChannel = supabase.channel('tasks-sync-'+currentUser.id)
+    .on('postgres_changes', {event:'*', schema:'public', table:'tasks', filter:'user_id=eq.'+currentUser.id}, handleRealtimeTaskChange)
+    .on('postgres_changes', {event:'*', schema:'public', table:'categories', filter:'user_id=eq.'+currentUser.id}, handleRealtimeCategoryChange)
+    .subscribe();
+}
+function unsubscribeRealtime(){
+  if(realtimeChannel){ supabase.removeChannel(realtimeChannel); realtimeChannel=null; }
+}
+let lastLocalWriteId = null; // avoids double-processing our own optimistic writes when the realtime echo arrives
+function handleRealtimeTaskChange(payload){
+  if(payload.eventType==='INSERT'){
+    if(state.tasks.some(t=>t.id===payload.new.id)) return;
+    state.tasks.push(rowToTask(payload.new));
+  } else if(payload.eventType==='UPDATE'){
+    const idx = state.tasks.findIndex(t=>t.id===payload.new.id);
+    if(idx>-1) state.tasks[idx] = rowToTask(payload.new);
+  } else if(payload.eventType==='DELETE'){
+    state.tasks = state.tasks.filter(t=>t.id!==payload.old.id);
+  }
+  save(); renderTasks();
+  if($('#view-calendario').classList.contains('active')) renderCalendar();
+}
+function handleRealtimeCategoryChange(payload){
+  if(payload.eventType==='INSERT'){
+    if(!state.categories.includes(payload.new.name)) state.categories.push(payload.new.name);
+  } else if(payload.eventType==='DELETE'){
+    state.categories = state.categories.filter(c=>c!==payload.old.name);
+  }
+  save(); renderTasks();
 }
 
 function uid(){ return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -801,6 +1008,7 @@ function toggleDone(id, el){
   const t = state.tasks.find(x=>x.id===id);
   if(!t) return;
   t.done = !t.done;
+  if(supabase && currentUser) withSync(dbUpdateTask(id, {done:t.done}));
   if(t.done){
     sounds.complete();
     el && el.classList.add('done');
@@ -815,6 +1023,7 @@ function toggleDone(id, el){
 }
 function deleteTask(id, el){
   sounds.del();
+  if(supabase && currentUser) withSync(dbDeleteTask(id));
   if(el){ el.classList.add('removing'); setTimeout(()=>{ state.tasks = state.tasks.filter(t=>t.id!==id); save(); renderTasks(); }, 320); }
   else { state.tasks = state.tasks.filter(t=>t.id!==id); save(); renderTasks(); }
 }
@@ -952,16 +1161,25 @@ $('#saveTaskBtn').addEventListener('click', ()=>{
   if(editingId){
     const t = state.tasks.find(x=>x.id===editingId);
     Object.assign(t, {text, date, priority:selectedPriority, categories:[...selectedCats], motivo: p.requiresMotivo?motivo:null});
+    if(supabase && currentUser) withSync(dbUpdateTask(editingId, taskToRow(t)));
     toast('Tarea actualizada');
+    save(); closeTaskModal(); renderTasks(); if($('#view-calendario').classList.contains('active')) renderCalendar();
   } else {
-    state.tasks.push({
+    const newTask = {
       id: uid(), text, date, priority:selectedPriority, categories:[...selectedCats],
       motivo: p.requiresMotivo?motivo:null, done:false, createdAt:Date.now(), order: state.tasks.length
-    });
+    };
+    if(supabase && currentUser){
+      dbInsertTask(newTask).then(row=>{
+        newTask.id = row.id; newTask.createdAt = row.createdAt;
+        save(); renderTasks(); if($('#view-calendario').classList.contains('active')) renderCalendar();
+      }).catch(err=>{ console.error(err); toast('No se pudo guardar en la nube'); });
+    }
+    state.tasks.push(newTask);
     sounds.add();
     toast('Tarea añadida');
+    save(); closeTaskModal(); renderTasks(); if($('#view-calendario').classList.contains('active')) renderCalendar();
   }
-  save(); closeTaskModal(); renderTasks(); if($('#view-calendario').classList.contains('active')) renderCalendar();
 });
 $('#fabAdd').addEventListener('click', ()=> openTaskModal(null));
 
@@ -983,11 +1201,23 @@ function renderCatManage(){
       if(!val) return;
       state.categories[i] = val;
       state.tasks.forEach(t=>{ t.categories = t.categories.map(cc=> cc===old? val: cc); });
+      if(supabase && currentUser){
+        withSync(dbRenameCategory(old, val).then(()=>{
+          const affected = state.tasks.filter(t=> t.categories.includes(val));
+          return Promise.all(affected.map(t=> dbUpdateTask(t.id, {categories:t.categories})));
+        }));
+      }
       save(); renderTasks();
     });
     row.querySelector('button').addEventListener('click', ()=>{
+      const affectedTasks = state.tasks.filter(t=> t.categories.includes(c));
       state.categories.splice(i,1);
       state.tasks.forEach(t=>{ t.categories = t.categories.filter(cc=>cc!==c); });
+      if(supabase && currentUser){
+        withSync(dbDeleteCategory(c).then(()=>
+          Promise.all(affectedTasks.map(t=> dbUpdateTask(t.id, {categories:t.categories})))
+        ));
+      }
       save(); renderCatManage(); renderTasks();
     });
     wrap.appendChild(row);
@@ -997,7 +1227,10 @@ $('#addCatBtn').addEventListener('click', ()=>{
   const inp = $('#newCatInput');
   const v = inp.value.trim();
   if(!v) return;
-  if(!state.categories.includes(v)) state.categories.push(v);
+  if(!state.categories.includes(v)){
+    state.categories.push(v);
+    if(supabase && currentUser) withSync(dbInsertCategory(v));
+  }
   inp.value='';
   save(); renderCatManage();
 });
@@ -1021,7 +1254,9 @@ function openReviewModal(){
       const inp = row.querySelector('input');
       row.querySelector('button').addEventListener('click', ()=>{
         if(!inp.value){ toast('Elige una fecha'); return; }
-        t.date = inp.value; save(); toast('Fecha asignada'); row.remove(); renderTasks();
+        t.date = inp.value;
+        if(supabase && currentUser) withSync(dbUpdateTask(t.id, {date:t.date}));
+        save(); toast('Fecha asignada'); row.remove(); renderTasks();
         if(body.children.length===0){ body.innerHTML = '<p style="color:var(--text-secondary); font-size:14px;">¡Todo asignado! 🎉</p>'; }
       });
       body.appendChild(row);
@@ -1133,7 +1368,10 @@ function setupDropTarget(el, dateStr){
     const id = e.dataTransfer.getData('text/plain');
     if(!id) return;
     const t = state.tasks.find(x=>x.id===id);
-    if(t){ t.date = dateStr; sounds.drag(); save(); renderCalendar(); renderTasks(); toast('Movida a '+fmtHuman(dateStr)); }
+    if(t){
+      t.date = dateStr; sounds.drag(); save(); renderCalendar(); renderTasks(); toast('Movida a '+fmtHuman(dateStr));
+      if(supabase && currentUser) withSync(dbUpdateTask(id, {date:dateStr}));
+    }
   });
 }
 
@@ -1220,6 +1458,9 @@ function enableTouchReorder(container){
         const ids = Array.from(container.querySelectorAll('.day-item')).map(x=>x.dataset.id);
         ids.forEach((id,i)=>{ const t=state.tasks.find(x=>x.id===id); if(t) t.order=i; });
         save(); renderCalendar();
+        if(supabase && currentUser){
+          withSync(Promise.all(ids.map((id,i)=> dbUpdateTask(id, {order:i}))));
+        }
       };
       document.addEventListener('pointermove', move);
       document.addEventListener('pointerup', up);
@@ -1254,8 +1495,14 @@ function handleSheetAction(act){
   if(!t) return;
   if(act==='move'){ openMoveDateModal(sheetTaskId); }
   else if(act==='edit'){ dayOverlay.classList.remove('open'); openTaskModal(sheetTaskId); }
-  else if(act==='done'){ t.done=!t.done; if(t.done) sounds.complete(); save(); renderDayList(); renderCalendar(); renderTasks(); }
-  else if(act==='del'){ sounds.del(); state.tasks = state.tasks.filter(x=>x.id!==sheetTaskId); save(); renderDayList(); renderCalendar(); renderTasks(); }
+  else if(act==='done'){
+    t.done=!t.done; if(t.done) sounds.complete(); save(); renderDayList(); renderCalendar(); renderTasks();
+    if(supabase && currentUser) withSync(dbUpdateTask(t.id, {done:t.done}));
+  }
+  else if(act==='del'){
+    sounds.del(); state.tasks = state.tasks.filter(x=>x.id!==sheetTaskId); save(); renderDayList(); renderCalendar(); renderTasks();
+    if(supabase && currentUser) withSync(dbDeleteTask(sheetTaskId));
+  }
 }
 
 /* move-to-date modal (mobile-friendly alternative to drag&drop) */
@@ -1275,6 +1522,7 @@ $('#confirmMoveDate').addEventListener('click', ()=>{
   if(t.priority==='obligatoria' && !val){ toast('Esta prioridad requiere fecha'); return; }
   t.date = val || null;
   sounds.drag(); save();
+  if(supabase && currentUser) withSync(dbUpdateTask(t.id, {date:t.date}));
   moveDateOverlay.classList.remove('open');
   renderCalendar(); renderTasks(); renderDayList();
   toast(val ? 'Movida a '+fmtHuman(val) : 'Marcada sin fecha');
@@ -1283,6 +1531,7 @@ $('#moveNoDateBtn').addEventListener('click', ()=>{
   const t = state.tasks.find(x=>x.id===moveTaskId);
   if(t.priority==='obligatoria'){ toast('Esta prioridad requiere fecha'); return; }
   t.date = null; save(); moveDateOverlay.classList.remove('open'); renderCalendar(); renderTasks(); renderDayList();
+  if(supabase && currentUser) withSync(dbUpdateTask(t.id, {date:null}));
   toast('Marcada sin fecha');
 });
 
@@ -1374,6 +1623,14 @@ $('#confirmImportBtn').addEventListener('click', ()=>{
   renderTasks();
   renderCalendar();
   toast('Copia de seguridad restaurada con éxito ✓');
+  if(supabase && currentUser){
+    setSyncStatus('syncing','Subiendo a la nube...');
+    dbReplaceAllWith(state.tasks, state.categories).then(insertedTasks=>{
+      state.tasks = insertedTasks;
+      save(); renderTasks(); renderCalendar();
+      setSyncStatus('online','Sincronizado');
+    }).catch(err=>{ console.error(err); setSyncStatus('offline','Error de sincronización'); toast('Se restauró localmente, pero falló la subida a la nube'); });
+  }
 });
 
 /* ===================== DAILY AUTO CHECK ===================== */
@@ -1385,7 +1642,135 @@ function dailyCheck(){
   }
 }
 
-/* ===================== SEED DATA (first run) ===================== */
+/* ===================== AUTH SCREEN ===================== */
+let authMode = 'login';
+function setAuthMode(m){
+  authMode = m;
+  $('#tabLogin').classList.toggle('active', m==='login');
+  $('#tabRegister').classList.toggle('active', m==='register');
+  $('#authSubmitBtn').textContent = m==='login' ? 'Iniciar sesión' : 'Crear cuenta';
+  $('#authHint').textContent = m==='login' ? '¿Primera vez aquí? Pulsa "Crear cuenta" arriba.' : '¿Ya tienes cuenta? Pulsa "Iniciar sesión" arriba.';
+  $('#authError').classList.remove('show');
+}
+function translateAuthError(msg){
+  if(/Invalid login credentials/i.test(msg)) return 'Correo o contraseña incorrectos.';
+  if(/already registered|already exists/i.test(msg)) return 'Ya existe una cuenta con ese correo.';
+  if(/Password should be|at least/i.test(msg)) return 'La contraseña debe tener al menos 6 caracteres.';
+  if(/Unable to validate email/i.test(msg)) return 'El correo no parece válido.';
+  return msg || 'Ha ocurrido un error. Inténtalo de nuevo.';
+}
+function applyAuthUI(loggedIn){
+  $('#authScreen').style.display = loggedIn ? 'none' : 'flex';
+  $('#mainApp').style.display = loggedIn ? 'block' : 'none';
+}
+function wireAuthUI(){
+  $('#tabLogin').addEventListener('click', ()=> setAuthMode('login'));
+  $('#tabRegister').addEventListener('click', ()=> setAuthMode('register'));
+  $('#authSubmitBtn').addEventListener('click', async ()=>{
+    const email = $('#authEmail').value.trim();
+    const password = $('#authPassword').value;
+    const errEl = $('#authError');
+    errEl.classList.remove('show');
+    if(!supabase){ errEl.textContent='Supabase no está configurado todavía.'; errEl.classList.add('show'); return; }
+    if(!email || !password){ errEl.textContent='Rellena correo y contraseña.'; errEl.classList.add('show'); return; }
+    const btn = $('#authSubmitBtn');
+    btn.disabled = true; btn.textContent='Un momento...';
+    try{
+      if(authMode==='login'){
+        const {error} = await supabase.auth.signInWithPassword({email,password});
+        if(error) throw error;
+      } else {
+        const {error} = await supabase.auth.signUp({email,password});
+        if(error) throw error;
+        toast('Cuenta creada. Si tu proyecto exige confirmación, revisa tu correo.');
+      }
+    }catch(err){
+      errEl.textContent = translateAuthError(err.message);
+      errEl.classList.add('show');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = authMode==='login' ? 'Iniciar sesión' : 'Crear cuenta';
+    }
+  });
+  $('#signOutBtn').addEventListener('click', async ()=>{
+    $('#settingsOverlay').classList.remove('open');
+    if(supabase) await supabase.auth.signOut();
+  });
+}
+
+/* ===================== MIGRATION (local cache -> Supabase) ===================== */
+function offerMigration(){
+  const n = state.tasks.length;
+  $('#migrateText').textContent = `Hemos encontrado ${n} tarea${n===1?'':'s'} guardada${n===1?'':'s'} localmente en este dispositivo. ¿Quieres importarla${n===1?'':'s'} a tu cuenta para que se sincronice${n===1?'':'n'} en la nube?`;
+  $('#migrateOverlay').classList.add('open');
+}
+function wireMigrationUI(){
+  $('#closeMigrate').addEventListener('click', ()=>{ $('#migrateOverlay').classList.remove('open'); finalizeNoMigration(); });
+  $('#skipMigrateBtn').addEventListener('click', ()=>{ $('#migrateOverlay').classList.remove('open'); finalizeNoMigration(); });
+  $('#confirmMigrateBtn').addEventListener('click', async ()=>{
+    $('#migrateOverlay').classList.remove('open');
+    setSyncStatus('syncing','Subiendo tareas...');
+    try{
+      const inserted = await dbReplaceAllWith(state.tasks, state.categories);
+      state.tasks = inserted;
+      state.migratedToSupabase = true;
+      save(); renderTasks(); renderCalendar();
+      setSyncStatus('online','Sincronizado');
+      toast('Tareas importadas a tu cuenta ✓');
+      subscribeRealtime();
+    }catch(err){
+      console.error(err);
+      setSyncStatus('offline','Error al importar');
+      toast('No se pudieron importar las tareas a la nube');
+    }
+  });
+}
+function finalizeNoMigration(){
+  state.migratedToSupabase = true;
+  state.tasks = [];
+  save();
+  renderTasks(); renderCalendar();
+  setSyncStatus('online','Sincronizado');
+  subscribeRealtime();
+}
+
+/* ===================== AUTH STATE HANDLING ===================== */
+async function handleSignedIn(user){
+  currentUser = user;
+  applyAuthUI(true);
+  $('#userEmailLabel').textContent = user.email || '';
+  renderSoundBtn(); syncCalToggle(); updateStorageBadge();
+  setSyncStatus('syncing','Cargando tareas...');
+  try{
+    const remote = await dbFetchAll();
+    const shouldOfferMigration = remote.tasks.length===0 && remote.categories.length===0 && state.tasks.length>0 && !state.migratedToSupabase;
+    if(shouldOfferMigration){
+      renderTasks(); renderCalendar();
+      setSyncStatus('online','Sincronizado');
+      offerMigration();
+      return;
+    }
+    state.tasks = remote.tasks;
+    if(remote.categories.length) state.categories = remote.categories;
+    state.migratedToSupabase = true;
+    save();
+    renderTasks(); renderCalendar(); dailyCheck();
+    setSyncStatus('online','Sincronizado');
+    subscribeRealtime();
+  }catch(err){
+    console.error(err);
+    setSyncStatus('offline','Sin conexión · usando caché local');
+    renderTasks(); renderCalendar();
+  }
+}
+function handleSignedOut(){
+  currentUser = null;
+  unsubscribeRealtime();
+  applyAuthUI(false);
+  $('#authEmail').value=''; $('#authPassword').value='';
+}
+
+/* ===================== SEED DATA (only for local-only fallback mode) ===================== */
 function seedIfEmpty(){
   if(state.tasks.length>0) return;
   const t = todayStr();
@@ -1401,20 +1786,37 @@ function seedIfEmpty(){
 }
 
 /* ===================== INIT ===================== */
-function init(){
-  seedIfEmpty();
-  renderSoundBtn();
-  syncCalToggle();
-  renderTasks();
-  dailyCheck();
+function startApp(){
   updateStorageBadge();
+  wireAuthUI();
+  wireMigrationUI();
+  if(supabase){
+    supabase.auth.onAuthStateChange((event, session)=>{
+      if(session && session.user){
+        if(!currentUser || currentUser.id!==session.user.id) handleSignedIn(session.user);
+      } else if(currentUser){
+        handleSignedOut();
+      } else {
+        applyAuthUI(false);
+      }
+    });
+  } else {
+    $('#configWarning').style.display = 'block';
+    applyAuthUI(true);
+    seedIfEmpty();
+    renderSoundBtn();
+    syncCalToggle();
+    renderTasks();
+    dailyCheck();
+    setSyncStatus('offline','Modo local (Supabase sin configurar)');
+  }
 }
 loadState().then(saved=>{
   if(saved) state = Object.assign(defaultState(), saved);
-  save(); // ensures data lands in IndexedDB (e.g. after a localStorage migration)
-  init();
+  save();
+  startApp();
 }).catch(()=>{
-  init();
+  startApp();
 });
 
 })();
